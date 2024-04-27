@@ -34,6 +34,7 @@ public class EmployeeRestController {
 
     @DeleteMapping("/employees/{id}")
     void deleteEmployee(@PathVariable Long id) {
+        System.out.println("Deleting id: " + id);
         employeeRepository.deleteById(id);
     }
 }
