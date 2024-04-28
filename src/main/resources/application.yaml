@@ -9,36 +9,25 @@ spring:
     name: webhello
   banner:
     location: classpath:banner.txt
-#  batch:
-#    initialize-schema: always
+
 
   datasource:
     # in-memory db
     #url: jdbc:h2:mem:mydb
     # file db:
     url: "jdbc:h2:file:./data/demo;AUTO_SERVER=TRUE;INIT=RUNSCRIPT FROM './src/main/resources/schema.sql'\\;RUNSCRIPT FROM './src/main/resources/data.sql';DB_CLOSE_DELAY=-1"
-
     username: sa
     password: password
     driverClassName: org.h2.Driver
-    initialization-mode: always
     
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     defer-datasource-initialization: true
     show-sql: true
-    hibernate:
-      ddl-auto: update
-      #ddl-auto: none
-    
-    #properties:
-      #hibernate:
-       # formate_sql: true
+
   h2:
     console:
       path: /h2
       enabled: true
       settings.trace: false
       settings.web-allow-others: false
-  sql:
-    init.mode: never
