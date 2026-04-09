@@ -16,7 +16,11 @@ export const setupTelemetry = () => {
 
   // Create and configure OTLP exporter
   const otlpExporter = new OTLPTraceExporter({
-    url: 'http://localhost:4318/v1/traces', // Update with your collector endpoint
+    url: 'http://localhost:4319/v1/traces',
+    headers: {
+      'Origin': 'http://localhost:3000',
+      'Access-Control-Request-Headers': 'Content-Type'
+    }
   });
   
   // TEMPORARY: Console exporter to bypass CORS
@@ -29,7 +33,7 @@ export const setupTelemetry = () => {
   };
   
   // Use BatchSpanProcessor for better performance
-  const spanProcessor = new BatchSpanProcessor(consoleExporter);
+  const spanProcessor = new BatchSpanProcessor(otlpExporter);
 
   const provider = new WebTracerProvider({ 
     resource,
