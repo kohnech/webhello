@@ -34,3 +34,5 @@ build/
 
 *.db
 *.jar
+
+node_modules/
