@@ -85,7 +85,10 @@ class EmployeeList extends Component {
             <div>
                 <AppNavbar/>
                 <Container fluid>
-                    <h3>Employees</h3>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h3>Employees</h3>
+                        <Button color="success" tag={Link} to="/employees/new">Add Employee</Button>
+                    </div>
                     <Table className="mt-4">
                         <thead>
                         <tr>

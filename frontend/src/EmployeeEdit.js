@@ -25,8 +25,9 @@ class EmployeeEdit extends Component {
     }
 
     async componentDidMount() {
-        if (this.props.match.params.id !== 'new') {
-            const client = await (await fetch(`/employees/${this.props.match.params.id}`)).json();
+        const { id } = this.props.router.params;
+        if (id !== 'new') {
+            const client = await (await fetch(`/employees/${id}`)).json();
             this.setState({item: client});
         }
     }
@@ -52,7 +53,7 @@ async handleSubmit(event) {
         },
         body: JSON.stringify(item),
     });
-    this.props.history.push('/employees');
+    this.props.router.navigate('/employees');
 }
 
     render() {
@@ -70,7 +71,7 @@ async handleSubmit(event) {
                                onChange={this.handleChange} autoComplete="name"/>
                     </FormGroup>
                     <FormGroup>
-                        <Label for="role">Email</Label>
+                        <Label for="role">Role</Label>
                         <Input type="text" name="role" id="role" value={item.role || ''}
                                onChange={this.handleChange} autoComplete="role"/>
                     </FormGroup>
