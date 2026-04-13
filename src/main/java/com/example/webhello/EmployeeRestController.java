@@ -49,8 +49,11 @@ public class EmployeeRestController {
 
     @PostMapping("/employees")
     Employee newEmployee(@RequestBody Employee newEmployee) {
-        // Layer 1: Validation
+        // Validation
         validateEmployee(newEmployee);
+        
+        // Duplicate check
+        checkForDuplicates(newEmployee);
         
         try {
             Thread.sleep(2000); // 2-second delay to simulate performance bottleneck
@@ -85,6 +88,41 @@ public class EmployeeRestController {
             }
             
             System.out.println("Employee validation successful");
+        } finally {
+            span.end();
+        }
+    }
+    
+    private void checkForDuplicates(Employee employee) {
+        Span span = tracer.spanBuilder("checkForDuplicates").startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            System.out.println("Checking for duplicate employee: " + employee.getName());
+            
+            span.setAttribute("employee.name", employee.getName());
+            span.setAttribute("employee.role", employee.getRole());
+            
+            // Simulate database query time
+            try {
+                Thread.sleep(500); // 500ms database lookup time
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // Check if employee with same name and role already exists
+            List<Employee> existingEmployees = employeeRepository.findAll();
+            boolean duplicateFound = existingEmployees.stream()
+                .anyMatch(existing -> 
+                    existing.getName().equalsIgnoreCase(employee.getName()) && 
+                    existing.getRole().equalsIgnoreCase(employee.getRole())
+                );
+            
+            if (duplicateFound) {
+                span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Duplicate employee found");
+                throw new IllegalArgumentException("Employee with same name and role already exists");
+            }
+            
+            span.setAttribute("duplicates.found", false);
+            System.out.println("No duplicate found - proceeding with save");
         } finally {
             span.end();
         }
