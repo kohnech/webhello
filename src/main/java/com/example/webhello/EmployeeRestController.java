@@ -11,12 +11,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class EmployeeRestController {
     @Autowired
     EmployeeRepository employeeRepository;
+    
+    private static final Tracer tracer = GlobalOpenTelemetry.getTracer("employee-service");
 
     @RequestMapping("/employees")
     Collection<Employee> employees() {
@@ -43,7 +49,45 @@ public class EmployeeRestController {
 
     @PostMapping("/employees")
     Employee newEmployee(@RequestBody Employee newEmployee) {
+        // Layer 1: Validation
+        validateEmployee(newEmployee);
+        
+        try {
+            Thread.sleep(2000); // 2-second delay to simulate performance bottleneck
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         return employeeRepository.save(newEmployee);
+    }
+    
+    private void validateEmployee(Employee employee) {
+        Span span = tracer.spanBuilder("validateEmployee").startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            System.out.println("Validating employee: " + employee.getName());
+            
+            span.setAttribute("employee.name", employee.getName() != null ? employee.getName() : "null");
+            span.setAttribute("employee.role", employee.getRole() != null ? employee.getRole() : "null");
+            
+            if (employee.getName() == null || employee.getName().trim().isEmpty()) {
+                span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Employee name is invalid");
+                throw new IllegalArgumentException("Employee name cannot be null or empty");
+            }
+            
+            if (employee.getRole() == null || employee.getRole().trim().isEmpty()) {
+                span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Employee role is invalid");
+                throw new IllegalArgumentException("Employee role cannot be null or empty");
+            }
+            
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            System.out.println("Employee validation successful");
+        } finally {
+            span.end();
+        }
     }
 
     @PutMapping("/employees/{id}")
