@@ -34,6 +34,11 @@ public class EmployeeRestController {
         return employeeRepository.findAll();
     }
 
+    @GetMapping("/count")
+    long count() {
+        return employeeRepository.countAllEmployees();
+    }
+
     @GetMapping("/employees/{id}")
     Employee one(@PathVariable Long id) {
 
