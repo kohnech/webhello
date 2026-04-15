@@ -6,15 +6,15 @@ import { DocumentLoadInstrumentation } from '@opentelemetry/instrumentation-docu
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 
 export const setupTelemetry = () => {
   const resource = resourceFromAttributes({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'react-app',
-    [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
+    [ATTR_SERVICE_NAME]: 'react-app',
+    [ATTR_SERVICE_VERSION]: '1.0.0',
   });
 
-  // Create and configure OTLP exporter
+  // Create and configure OTLP exporter with Aspire
   const otlpExporter = new OTLPTraceExporter({
     url: 'http://localhost:4319/v1/traces',
     headers: {
@@ -23,7 +23,7 @@ export const setupTelemetry = () => {
     }
   });
   
-  // TEMPORARY: Console exporter to bypass CORS
+  // Console alternative for debugging
   const consoleExporter = {
     export: (spans, resultCallback) => {
       console.log('Exporting spans:', spans);
