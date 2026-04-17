@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { trace, context } from '@opentelemetry/api';
 import { Link } from 'react-router-dom';
 import { Button, Container, Form, FormGroup, Input, Label } from 'reactstrap';
 import AppNavbar from './AppNavbar';
@@ -22,6 +23,7 @@ class EmployeeEdit extends Component {
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.tracer = trace.getTracer('user-interactions');
     }
 
     async componentDidMount() {
@@ -45,15 +47,32 @@ async handleSubmit(event) {
     event.preventDefault();
     const {item} = this.state;
 
-    await fetch('/employees' + (item.id ? '/' + item.id : ''), {
-        method: (item.id) ? 'PUT' : 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(item),
+    const span = this.tracer.startSpan('user.save_button_clicked');
+
+    span.setAttributes({
+                'user.action': 'save_button_clicked',
+                'component': 'EmployeeList',
+                'ui.button': 'save'
     });
+
+    const ctx = trace.setSpan(context.active(), span);
+
+    try {
+        await context.with(ctx, async () => {
+        await fetch('/employees' + (item.id ? '/' + item.id : ''), {
+            method: (item.id) ? 'PUT' : 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(item),
+        });
+        });
+    } finally {
+        span.end();
+    }
     this.props.router.navigate('/employees');
+    
 }
 
     render() {
