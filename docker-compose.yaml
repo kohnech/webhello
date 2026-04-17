@@ -1,0 +1,31 @@
+services:
+  collector:
+    image: otel/opentelemetry-collector:latest
+    ports:
+      - "4319:4318"
+    volumes:
+      - "./collector-config.yaml:/etc/collector-config.yaml"
+    command: ["--config=/etc/collector-config.yaml"]
+    depends_on:
+      - aspire
+      
+  aspire:
+    image: remote-mcr.repo7.sebank.se/dotnet/aspire-dashboard:latest
+    ports:
+      - "18888:18888"
+      - "4317:18889"
+      - "4318:18890"
+    environment:
+      - ASPIRE_ALLOW_UNSECURED_TRANSPORT=true
+      - ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+      - ASPIRE_DASHBOARD_OTLP_HTTP_CORS_ALLOWED_ORIGINS=http://localhost:3000
+      - DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_CORS_ALLOWED_HEADERS=Authorization,Content-Type
+      - OTEL_EXPORTER_OTLP_HEADERS=Access-Control-Allow-Origin=http://localhost:3000
+      - OTEL_EXPORTER_OTLP_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18888/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+

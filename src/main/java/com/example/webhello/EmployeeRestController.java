@@ -7,13 +7,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class EmployeeRestController {
     @Autowired
     EmployeeRepository employeeRepository;
+    
+    private static final Tracer tracer = GlobalOpenTelemetry.getTracer("employee-service");
 
     @RequestMapping("/employees")
     Collection<Employee> employees() {
@@ -23,6 +32,11 @@ public class EmployeeRestController {
     @GetMapping("/all")
     List<Employee> all() {
         return employeeRepository.findAll();
+    }
+
+    @GetMapping("/count")
+    long count() {
+        return employeeRepository.countAllEmployees();
     }
 
     @GetMapping("/employees/{id}")
@@ -36,5 +50,105 @@ public class EmployeeRestController {
     void deleteEmployee(@PathVariable Long id) {
         System.out.println("Deleting id: " + id);
         employeeRepository.deleteById(id);
+    }
+
+    @PostMapping("/employees")
+    Employee newEmployee(@RequestBody Employee newEmployee) {
+        // Validation
+        validateEmployee(newEmployee);
+        
+        // Duplicate check
+        checkForDuplicates(newEmployee);
+        
+        try {
+            Thread.sleep(2000); // 2-second delay to simulate performance bottleneck
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return employeeRepository.save(newEmployee);
+    }
+    
+    private void validateEmployee(Employee employee) {
+        Span span = tracer.spanBuilder("validateEmployee").startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            System.out.println("Validating employee: " + employee.getName());
+            
+            span.setAttribute("employee.name", employee.getName() != null ? employee.getName() : "null");
+            span.setAttribute("employee.role", employee.getRole() != null ? employee.getRole() : "null");
+            
+            if (employee.getName() == null || employee.getName().trim().isEmpty()) {
+                span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Employee name is invalid");
+                throw new IllegalArgumentException("Employee name cannot be null or empty");
+            }
+            
+            if (employee.getRole() == null || employee.getRole().trim().isEmpty()) {
+                span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Employee role is invalid");
+                throw new IllegalArgumentException("Employee role cannot be null or empty");
+            }
+            
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            System.out.println("Employee validation successful");
+        } finally {
+            span.end();
+        }
+    }
+    
+    private void checkForDuplicates(Employee employee) {
+        Span span = tracer.spanBuilder("checkForDuplicates").startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            System.out.println("Checking for duplicate employee: " + employee.getName());
+            
+            span.setAttribute("employee.name", employee.getName());
+            span.setAttribute("employee.role", employee.getRole());
+            
+            // Simulate database query time
+            try {
+                Thread.sleep(500); // 500ms database lookup time
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // Check if employee with same name and role already exists
+            List<Employee> existingEmployees = employeeRepository.findAll();
+            boolean duplicateFound = existingEmployees.stream()
+                .anyMatch(existing -> 
+                    existing.getName().equalsIgnoreCase(employee.getName()) && 
+                    existing.getRole().equalsIgnoreCase(employee.getRole())
+                );
+            
+            if (duplicateFound) {
+                span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Duplicate employee found");
+                throw new IllegalArgumentException("Employee with same name and role already exists");
+            }
+            
+            span.setAttribute("duplicates.found", false);
+            System.out.println("No duplicate found - proceeding with save");
+        } finally {
+            span.end();
+        }
+    }
+
+    @PutMapping("/employees/{id}")
+    Employee replaceEmployee(@RequestBody Employee newEmployee, @PathVariable Long id) {
+        return employeeRepository.findById(id)
+                .map(employee -> {
+                    employee.setName(newEmployee.getName());
+                    employee.setRole(newEmployee.getRole());
+                    return employeeRepository.save(employee);
+                })
+                .orElseGet(() -> {
+                    newEmployee.setId(id);
+                    return employeeRepository.save(newEmployee);
+                });
+    }
+
+    @GetMapping("/ping")
+    String ping() {
+        return "pong";
     }
 }

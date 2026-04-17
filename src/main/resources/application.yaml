@@ -3,6 +3,8 @@ logging:
     org:
 #      springframework: DEBUG
 
+server:
+  port: 8083
 
 spring:
   application:
