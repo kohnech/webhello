@@ -20,6 +20,12 @@ First if you don't have the open telemetry agent you need install it via:
 Then you can use it via:
 
     $env:JAVA_TOOL_OPTIONS = "-javaagent:opentelemetry-javaagent.jar"
+    $env:OTEL_TRACES_EXPORTER = "otlp"
+    $env:OTEL_LOGS_EXPORTER = "otlp"
+    $env:OTEL_METRICS_EXPORTER = "otlp"
+    $env:OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+
+
     mvn spring-boot:run
 
 
