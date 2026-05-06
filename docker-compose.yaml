@@ -10,7 +10,7 @@ services:
       - aspire
       
   aspire:
-    image: remote-mcr.repo7.sebank.se/dotnet/aspire-dashboard:latest
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
     ports:
       - "18888:18888"
       - "4317:18889"
