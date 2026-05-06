@@ -12,6 +12,8 @@ To run frontend:
     npm install
     npm start
 
+This will open the frontend on localhost:3000
+
 To start the backend:
 First if you don't have the open telemetry agent you need install it via:
     
